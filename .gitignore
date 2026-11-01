@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.env
+data/
+data/**
+data/chroma/
+data/pdfs/
+data/hf_cache/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+.venv/
