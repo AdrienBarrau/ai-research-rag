@@ -7,7 +7,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 src_dir = os.path.abspath(os.path.join(current_dir, "../.."))
 if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
-from __future__ import annotations
+
 
 import streamlit as st
 
