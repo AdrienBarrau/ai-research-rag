@@ -1,5 +1,12 @@
 """Streamlit UI avec indicateur de source (local/live)."""
+import sys
+import os
 
+# Astuce pour Streamlit Cloud : ajouter le dossier 'src' au chemin de recherche Python
+current_dir = os.path.dirname(os.path.abspath(__file__))
+src_dir = os.path.abspath(os.path.join(current_dir, "../.."))
+if src_dir not in sys.path:
+    sys.path.insert(0, src_dir)
 from __future__ import annotations
 
 import streamlit as st
