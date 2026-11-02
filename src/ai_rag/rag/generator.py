@@ -1,4 +1,4 @@
-"""LLM generator with structured output."""
+"""LLM generator with model selection."""
 
 from __future__ import annotations
 
@@ -7,15 +7,17 @@ from langchain_groq import ChatGroq
 from ai_rag.config import settings
 
 
-def get_llm(temperature: float = 0.2) -> ChatGroq:
+def get_llm(temperature: float = 0.2, model_override: str | None = None) -> ChatGroq:
+    """Return a Groq LLM with optional model override."""
+    model = model_override or settings.llm_model
     return ChatGroq(
-        model=settings.llm_model,
+        model=model,
         api_key=settings.groq_api_key,
         temperature=temperature,
     )
 
 
-SYSTEM_PROMPT = """Tu es un expert en recherche IA. Réponds à la question en te basant UNIQUEMENT sur les extraits de papiers fournis.
+SYSTEM_PROMPT = """Tu es un expert en recherche IA. Réponds à la question en te basant sur les extraits de papiers fournis.
 
 Règles:
 - Cite chaque affirmation avec [n] correspondant à la source.

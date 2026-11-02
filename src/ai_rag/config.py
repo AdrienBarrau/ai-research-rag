@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # LLM (Groq - gratuit)
     groq_api_key: str = ""
-    llm_model: str = "llama-3.3-70b-versatile"
+    llm_model: str = "qwen/qwen3.8-27b"
 
     # Embeddings (local, gratuit)
     embedding_model: str = "BAAI/bge-m3"
