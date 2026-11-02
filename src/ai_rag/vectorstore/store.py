@@ -71,13 +71,13 @@ def search_with_preset(
     client = get_qdrant_client()
     collection_name = settings.qdrant_collection_name
     
-    # Embed the query
-    query_vector = store.embedding.embed_query(query)
+    #  Correction : embeddings (pluriel) et non embedding
+    query_vector = store.embeddings.embed_query(query)
     
     # Search with custom ef parameter
     search_params = SearchParams(
         hnsw_ef=ef,
-        exact=False,  # Use approximate search (faster)
+        exact=False,
     )
     
     results = client.search(
@@ -97,7 +97,6 @@ def search_with_preset(
         docs.append(doc)
     
     return docs
-
 
 def _generate_chunk_id(doc: Document, index: int) -> str:
     """Generate a deterministic UUID for each chunk."""
