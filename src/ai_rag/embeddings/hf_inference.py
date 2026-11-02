@@ -6,6 +6,7 @@ import logging
 import os
 from typing import Any
 
+import numpy as np
 from langchain_core.embeddings import Embeddings
 
 log = logging.getLogger(__name__)
@@ -19,33 +20,45 @@ class HuggingFaceInferenceEmbeddings(Embeddings):
         self.api_key = api_key or os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACEHUB_API_TOKEN")
         
         if not self.api_key:
-            log.warning(" HF_TOKEN not set. Using unauthenticated API (rate limited).")
+            log.warning("⚠️ HF_TOKEN not set. Using unauthenticated API (rate limited).")
         
-        # Import lazy pour éviter les erreurs si pas installé
         try:
             from huggingface_hub import InferenceClient
             self.client = InferenceClient(token=self.api_key)
         except ImportError:
             raise ImportError("Please install huggingface-hub: pip install huggingface-hub")
     
+    def _embed_single(self, text: str) -> list[float]:
+        """Embed a single text with robust type handling."""
+        try:
+            response = self.client.feature_extraction(text, model=self.model)
+            
+            # ✅ Gestion robuste du type de retour
+            if isinstance(response, np.ndarray):
+                vector = response.flatten().tolist()
+            elif hasattr(response, 'tolist'):
+                # PyTorch tensor ou numpy array
+                vector = np.array(response).flatten().tolist()
+            elif isinstance(response, list):
+                # Liste imbriquée potentielle
+                if response and isinstance(response[0], list):
+                    vector = response[0]  # Prendre le premier embedding
+                else:
+                    vector = response
+            else:
+                raise ValueError(f"Unexpected response type: {type(response)}")
+            
+            return vector
+            
+        except Exception as e:
+            log.error(f"Embedding failed: {e}")
+            # Fallback: vecteur nul (sera ignoré)
+            return [0.0] * 1024
+    
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         """Embed a list of documents."""
-        embeddings = []
-        for text in texts:
-            try:
-                # HF Inference API pour les embeddings
-                response = self.client.feature_extraction(text, model=self.model)
-                # bge-m3 retourne un vecteur de shape (1, 1024), on prend [0]
-                if hasattr(response, 'shape') and len(response.shape) > 1:
-                    embeddings.append(response[0].tolist())
-                else:
-                    embeddings.append(response.tolist())
-            except Exception as e:
-                log.error(f"Embedding failed for text: {e}")
-                # Fallback: vecteur vide (sera ignoré par Qdrant)
-                embeddings.append([0.0] * 1024)
-        return embeddings
+        return [self._embed_single(text) for text in texts]
     
     def embed_query(self, text: str) -> list[float]:
         """Embed a single query."""
-        return self.embed_documents([text])[0]
+        return self._embed_single(text)

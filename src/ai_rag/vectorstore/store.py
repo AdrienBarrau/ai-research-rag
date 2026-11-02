@@ -1,4 +1,4 @@
-"""Qdrant Cloud vector store wrapper avec support des paramètres HNSW."""
+"""Qdrant Cloud vector store wrapper - compatible multi-versions."""
 
 from __future__ import annotations
 
@@ -32,6 +32,20 @@ def get_qdrant_client() -> QdrantClient:
     )
 
 
+def _get_embeddings_attribute(store: QdrantVectorStore) -> Embeddings:
+    """Get the embeddings object, compatible with all langchain-qdrant versions."""
+    # Essaie "embedding" (singulier) puis "embeddings" (pluriel)
+    if hasattr(store, 'embedding'):
+        return store.embedding
+    elif hasattr(store, 'embeddings'):
+        return store.embeddings
+    else:
+        raise AttributeError(
+            "QdrantVectorStore has neither 'embedding' nor 'embeddings' attribute. "
+            "Please check your langchain-qdrant version."
+        )
+
+
 def get_vectorstore(embeddings: Embeddings) -> QdrantVectorStore:
     """Return a Qdrant vector store with optimized HNSW config."""
     client = get_qdrant_client()
@@ -41,24 +55,37 @@ def get_vectorstore(embeddings: Embeddings) -> QdrantVectorStore:
     collection_exists = any(c.name == collection_name for c in collections)
     
     if not collection_exists:
-        log.info(" Création de la collection Qdrant: %s", collection_name)
+        log.info("📦 Création de la collection Qdrant: %s", collection_name)
         vector_size = 1024 if "bge-m3" in settings.embedding_model else 384
         
-        # Configuration HNSW optimisée pour la vitesse
         client.create_collection(
             collection_name=collection_name,
             vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
             hnsw_config=HnswConfigDiff(
-                m=16,  # Nombre de connexions par noeud (16 est un bon défaut)
-                ef_construct=128,  # Qualité de construction (128 est bon)
+                m=16,
+                ef_construct=128,
             ),
         )
     
-    return QdrantVectorStore(
-        client=client,
-        collection_name=collection_name,
-        embedding=embeddings,
-    )
+    # ✅ Détection dynamique du nom de paramètre
+    import inspect
+    sig = inspect.signature(QdrantVectorStore.__init__)
+    params = sig.parameters
+    
+    # Si "embeddings" (pluriel) est dans les paramètres, utilise-le
+    if 'embeddings' in params:
+        return QdrantVectorStore(
+            client=client,
+            collection_name=collection_name,
+            embeddings=embeddings,
+        )
+    # Sinon utilise "embedding" (singulier)
+    else:
+        return QdrantVectorStore(
+            client=client,
+            collection_name=collection_name,
+            embedding=embeddings,
+        )
 
 
 def search_with_preset(
@@ -67,36 +94,39 @@ def search_with_preset(
     k: int,
     ef: int,
 ) -> list[Document]:
-    """Search with custom HNSW parameters for speed/quality tradeoff."""
+    """Search with custom HNSW parameters using the new query_points API."""
     client = get_qdrant_client()
     collection_name = settings.qdrant_collection_name
     
-    #  Correction : embeddings (pluriel) et non embedding
-    query_vector = store.embeddings.embed_query(query)
+    # ✅ Détection dynamique de l'attribut
+    embedder = _get_embeddings_attribute(store)
+    query_vector = embedder.embed_query(query)
     
-    # Search with custom ef parameter
     search_params = SearchParams(
         hnsw_ef=ef,
         exact=False,
     )
     
-    results = client.search(
+    # Utilisation de query_points (API moderne)
+    query_result = client.query_points(
         collection_name=collection_name,
-        query_vector=query_vector,
+        query=query_vector,
         limit=k,
         search_params=search_params,
     )
     
-    # Convert to LangChain Documents
+    # La structure de retour est query_result.points
     docs = []
-    for result in results:
+    for point in query_result.points:
+        payload = point.payload or {}
         doc = Document(
-            page_content=result.payload.get("page_content", ""),
-            metadata=result.payload.get("metadata", {}),
+            page_content=payload.get("page_content", ""),
+            metadata=payload.get("metadata", {}),
         )
         docs.append(doc)
     
     return docs
+
 
 def _generate_chunk_id(doc: Document, index: int) -> str:
     """Generate a deterministic UUID for each chunk."""
@@ -113,7 +143,7 @@ def add_documents(store: QdrantVectorStore, docs: list[Document]) -> list[str]:
     """Add documents with unique UUIDs."""
     ids = [_generate_chunk_id(doc, i) for i, doc in enumerate(docs)]
     store.add_documents(docs, ids=ids)
-    log.info(" Upserted %d chunks into Qdrant collection '%s'", len(docs), settings.qdrant_collection_name)
+    log.info("✅ Upserted %d chunks into Qdrant collection '%s'", len(docs), settings.qdrant_collection_name)
     return ids
 
 

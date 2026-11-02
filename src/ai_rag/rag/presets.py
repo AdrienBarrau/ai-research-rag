@@ -23,7 +23,7 @@ PRESETS = {
         k=3,
         ef=64,
         use_reranker=False,
-        llm_model="llama-3.1-8b-instant",  # Ultra rapide
+        llm_model="qwen/qwen3.8-27b",  # Ultra rapide
         description="⚡ Rapide (~2-3s) - Idéal pour des questions simples",
     ),
     "balanced": RetrievalPreset(
