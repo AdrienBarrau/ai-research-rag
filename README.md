@@ -1,4 +1,4 @@
-*# AI Research RAG
+AI Research RAG
 
 Application RAG pour indexer les papiers de recherche en IA et répondre à des questions pointues (SOTA, approches techniques, etc.) avec des sources vérifiables.
 
