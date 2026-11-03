@@ -14,7 +14,7 @@ def get_llm(temperature: float = 0.2, model_override: str | None = None) -> Chat
         model=model,
         api_key=settings.groq_api_key,
         temperature=temperature,
-        max_tokens=800,
+        max_tokens=950,
     )
 
 
