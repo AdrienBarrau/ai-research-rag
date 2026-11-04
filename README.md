@@ -1,6 +1,7 @@
 AI Research RAG
 
 Application RAG pour indexer les papiers de recherche en IA et répondre à des questions pointues (SOTA, approches techniques, etc.) avec des sources vérifiables.
+**La base de connaissances se met à jour automatiquement chaque semaine** avec les papiers les plus récents d'arXiv via GitHub Actions.
 
 **[ Essayer l'app en ligne](https://ai-research-rag-kfjbnxzq4m3igszngx4apx.streamlit.app/)**  
 
