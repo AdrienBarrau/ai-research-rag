@@ -105,4 +105,4 @@ def ingest_recent_papers(days_back: int = 30, max_results: int = 150) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    ingest_recent_papers(days_back=7, max_results=30)
+    ingest_recent_papers(days_back=7, max_results=50)

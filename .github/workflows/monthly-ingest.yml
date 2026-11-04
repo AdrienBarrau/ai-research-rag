@@ -3,7 +3,7 @@ name: Monthly ArXiv Ingestion
 on:
   # Déclenchement automatique : Le 1er de chaque mois à 02:00 UTC
   schedule:
-    - cron: '0 2 1 * *'
+    - cron: '0 2 * * 1'
   
   # Permet de le lancer manuellement depuis l'onglet "Actions" de GitHub pour tester
   workflow_dispatch:
